@@ -5,12 +5,12 @@ import { UserModel } from "../models/user.model";
 export class UserRepositorySequelize implements UserRepository {
 	async findAll(): Promise<User[]> {
 		const users = await UserModel.findAll();
-		return users.map((u) => new User(u.id, u.name, u.email));
+		return users.map((u) => new User(u.name, u.email, u.id));
 	}
 
 	async findById(id: string): Promise<User | null> {
 		const user = await UserModel.findByPk(id);
-		return user ? new User(user.id, user.name, user.email) : null;
+		return user ? new User(user.name, user.email, user.id) : null;
 	}
 
 	async save(user: User): Promise<void> {
@@ -23,6 +23,6 @@ export class UserRepositorySequelize implements UserRepository {
 
 	async findByEmail(email: string): Promise<User | null> {
 		const user = await UserModel.findOne({ where: { email } });
-		return user ? new User(user.id, user.name, user.email) : null;
+		return user ? new User(user.name, user.email, user.id) : null;
 	}
 }
