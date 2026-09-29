@@ -1,56 +1,100 @@
 # Cymetria · Gestión de usuarios
 
-Aplicación web para administrar usuarios. El backend usa Express, TypeScript, Sequelize y PostgreSQL; el frontend usa React, TypeScript, React Query, Zustand y Tailwind CSS.
+Aplicación full-stack para consultar y administrar usuarios. El backend está construido con Node.js, Express, TypeScript, Sequelize y PostgreSQL. El frontend usa React, TypeScript, React Query, Zustand y Tailwind CSS.
 
 ## Requisitos
 
 - Node.js 20.19 o posterior y npm.
-- PostgreSQL accesible y una base llamada `dev_test` (o la indicada en el archivo de entorno).
+- PostgreSQL accesible desde el backend.
+- Una base de datos PostgreSQL ya creada, por defecto `dev_test`.
 
-## Configuración y arranque
+## Instalación y configuración
 
-1. Instala las dependencias del backend y frontend:
+Instala las dependencias desde la raíz del repositorio:
 
-   ```sh
-   npm install
-   npm --prefix frontend install
-   ```
+```sh
+npm install
+npm --prefix frontend install
+```
 
-2. Configura `.env.development` en la raíz:
+Crea o configura `.env.development` en la raíz del proyecto:
 
-   ```dotenv
-   DB_HOST=127.0.0.1
-   DB_PORT=5432
-   DB_USER=postgres
-   DB_PASSWORD=tu_contraseña
-   DB_NAME=dev_test
-   ```
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=tu_contraseña
+DB_NAME=dev_test
+```
 
-3. Abre dos terminales desde la raíz. Inicia el backend con `npm run dev` y el frontend con `npm run frontend:dev`.
-   Abre la dirección que muestra Vite (normalmente `http://localhost:5173`). Vite reenvía `/api` al backend en el puerto 3000.
+La base de datos debe existir antes de iniciar la API. El backend sincroniza el modelo `users` al arrancar; el usuario de PostgreSQL necesita permisos para crear y modificar tablas.
 
-Para compilar, ejecuta `npm run build` para el backend y `npm run frontend:build` para el frontend. Ejecuta las pruebas unitarias con `npm test`.
+## Ejecutar en desarrollo
 
-## Funcionalidades
+Abre dos terminales desde la raíz:
 
-- Listado paginado, búsqueda por nombre o correo y selección del tamaño de página.
-- Crear, editar y eliminar usuarios, con validación y confirmación antes de borrar.
-- Exportar todos los resultados coincidentes como CSV, independientemente de la página actual.
-- Estados de carga, error y lista vacía.
+```sh
+npm run dev
+```
 
-## API de usuarios
+```sh
+npm run frontend:dev
+```
 
-- `GET /api/v1/users?page=1&pageSize=10&search=` devuelve `data`, `page`, `pageSize`, `total` y `totalPages`.
-- `GET /api/v1/users/:id` devuelve el usuario dentro de `data`.
-- `POST /api/v1/users` crea un usuario con `name` y `email`.
-- `PATCH /api/v1/users/:id` actualiza nombre y correo.
-- `DELETE /api/v1/users/:id` elimina un usuario.
-- `GET /api/v1/users/export.csv?search=` descarga el directorio completo o los resultados de búsqueda como CSV compatible con Excel.
+Vite muestra la dirección local, normalmente `http://localhost:5173`. Durante el desarrollo, Vite reenvía las solicitudes `/api` al backend en `http://localhost:3000`.
 
-El backend sincroniza el modelo `users` al iniciar. La base `dev_test` debe existir y el usuario de PostgreSQL debe tener permisos para crear y modificar tablas.
+## Compilar y probar
+
+```sh
+npm run build
+npm run frontend:build
+npm test
+```
+
+`npm test` compila el backend y ejecuta las pruebas con el runner integrado `node:test`. Las pruebas son unitarias y no requieren una instancia de PostgreSQL.
+
+## Funcionalidades del frontend
+
+- Listado paginado con búsqueda por nombre o correo y selección del tamaño de página.
+- Creación, edición y eliminación de usuarios.
+- Exportación de todos los resultados coincidentes a CSV, sin limitarse a la página visible.
+- Estados de carga, error y lista vacía, además de validación y confirmación para acciones destructivas.
+
+React Query administra las consultas y mutaciones del servidor. Zustand conserva el estado compartido de búsqueda y paginación de la vista.
+
+## API
+
+Todas las rutas usan el prefijo `/api/v1/users`.
+
+| Método y ruta | Descripción | Respuesta principal |
+| --- | --- | --- |
+| `GET /api/v1/users?page=1&pageSize=10&search=` | Lista usuarios paginados; búsqueda opcional | `{ "data": [], "page": 1, "pageSize": 10, "total": 0, "totalPages": 0 }` |
+| `GET /api/v1/users/:id` | Consulta un usuario por UUID | `{ "data": { "id": "…", "name": "…", "email": "…" } }` |
+| `POST /api/v1/users` | Crea un usuario | HTTP 201 y el usuario dentro de `data` |
+| `PATCH /api/v1/users/:id` | Actualiza nombre o correo | El usuario actualizado dentro de `data` |
+| `DELETE /api/v1/users/:id` | Elimina un usuario | HTTP 204; HTTP 404 si no existe |
+| `GET /api/v1/users/export.csv?search=` | Exporta todos los usuarios o los que coinciden con la búsqueda | Archivo CSV compatible con Excel |
+
+El cuerpo de creación y actualización acepta JSON con `name` y `email`, por ejemplo:
+
+```json
+{
+  "name": "Ana García",
+  "email": "ana@example.com"
+}
+```
+
+La paginación admite `pageSize` entre 1 y 100. Las respuestas de error tienen un objeto `error.message`; los UUID inválidos devuelven HTTP 400.
 
 ## Decisiones técnicas
 
-- El listado pagina en base de datos y desempata por ID para que el orden sea estable entre páginas.
-- La exportación usa CSV con BOM para facilitar la apertura en Excel. Consulta bloques de 500 registros ordenados por UUID, escribe cada bloque en la respuesta y espera el evento `drain` cuando el cliente consume más lento. Esto limita la memoria y permite que el event loop atienda otras solicitudes durante las consultas y la escritura.
-- Las pruebas usan `node:test`: validan normalización y duplicados en el servicio, y paginación/mapeo del adaptador con el método del modelo Sequelize simulado; no requieren PostgreSQL.
+- El puerto `UserRepository` define las operaciones que requiere la aplicación; `UserRepositorySequelize` las implementa con Sequelize y PostgreSQL. El controller HTTP valida y presenta las respuestas, y `UserService` coordina las reglas del caso de uso.
+- La consulta paginada se ejecuta en PostgreSQL, no sobre todos los usuarios en memoria. El orden por fecha de creación se desempata por UUID para que el orden de página sea estable.
+- La exportación se entrega como CSV con BOM para que las hojas de cálculo reconozcan correctamente el archivo y los acentos. El servidor obtiene grupos de 500 registros usando paginación por cursor UUID, en vez de cargar toda la tabla o recorrerla con offsets crecientes.
+- Cada grupo se escribe directamente en la respuesta HTTP. Cuando el cliente no consume los datos con suficiente rapidez, el servidor espera el evento `drain` antes de continuar. Esto mantiene acotado el uso de memoria y permite que el event loop atienda otras solicitudes entre consultas y escrituras. Los valores que podrían interpretarse como fórmulas se neutralizan al exportarlos.
+- Las pruebas sustituyen el puerto de persistencia para probar el servicio y simulan métodos del modelo Sequelize para comprobar el adaptador sin conectarse a una base de datos.
+
+## Pruebas unitarias actuales
+
+- `tests/user.service.test.cjs`: normalización del correo al crear y rechazo de correos duplicados.
+- `tests/user.repository.test.cjs`: paginación, orden determinístico, mapeo al dominio y consulta de exportación por cursor.
