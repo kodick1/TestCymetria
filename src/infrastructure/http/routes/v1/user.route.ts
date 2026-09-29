@@ -11,7 +11,6 @@ router.get("/", withTryCatch(userController.getAllUsers.bind(userController)));
 router.get("/export.csv", withTryCatch(userController.exportUsers.bind(userController)));
 router.get("/:id", withTryCatch(userController.getUserById.bind(userController)));
 router.post("/", withTryCatch(userController.createUser.bind(userController)));
-//metodos delete y update
 router.delete("/:id", withTryCatch(userController.deleteUser.bind(userController)));
 router.patch("/:id", withTryCatch(userController.updateUser.bind(userController)));
 

@@ -15,6 +15,7 @@ export class UserRepositorySequelize implements UserRepository {
 	}
 
 	async findAllForExport(afterId: string | null, pageSize: number, search: string): Promise<User[]> {
+		// Use the UUID cursor instead of OFFSET so later batches stay efficient as the export grows.
 		const users = await UserModel.findAll({
 			where: {
 				...(afterId ? { id: { [Op.gt]: afterId } } : {}),
@@ -45,8 +46,7 @@ export class UserRepositorySequelize implements UserRepository {
 		return user ? new User(user.name, user.email, user.id) : null;
 	}
 
-	//funciones crud faltantes
-	//Update
+	// Persist the update and return a domain entity rather than an ORM model.
 	async update(id: string, user: Partial<User>): Promise<User | null> {
 		const existingUser = await UserModel.findByPk(id);
 		if (!existingUser) {
@@ -54,8 +54,9 @@ export class UserRepositorySequelize implements UserRepository {
 		}
 		await existingUser.update(user);
 		return new User(existingUser.name, existingUser.email, existingUser.id);
-	}	
-//Delete
+	}
+
+	// Return false when the requested record does not exist.
 	async delete(id: string): Promise<boolean> {
 		const existingUser = await UserModel.findByPk(id);
 		if (!existingUser) {
@@ -64,5 +65,4 @@ export class UserRepositorySequelize implements UserRepository {
 		await existingUser.destroy();
 		return true;
 	}
-	
-	}
+}

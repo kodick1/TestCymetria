@@ -21,7 +21,7 @@ export class UserController {
 	async getUserById(req: Request, res: Response) {
 		const user = await userService.getUserById(this.validateId(req.params.id));
 		if (!user) {
-			res.status(404).json({ ok: false, message: "User not found" });
+			res.status(404).json({ success: false, error: { message: "User not found" } });
 			return;
 		}
 		res.json({ data: user });
@@ -37,6 +37,7 @@ export class UserController {
 		res.write("\uFEFFid,name,email\r\n");
 
 		const search = String(req.query.search ?? "").trim();
+		// Cursor-based batches bound memory use for large exports.
 		const batchSize = 500;
 		let afterId: string | null = null;
 		while (!res.destroyed) {
@@ -48,6 +49,7 @@ export class UserController {
 			if (!lastId) throw new Error("Export batch returned a user without an ID");
 			afterId = lastId;
 			if (!res.write(`${rows.join("\r\n")}\r\n`) && !res.destroyed) {
+				// Respect backpressure so slow clients do not grow the response buffer indefinitely.
 				await waitForDrainOrClose(res);
 			}
 			if (users.length < batchSize) break;
@@ -63,7 +65,7 @@ export class UserController {
 	async deleteUser(req: Request, res: Response) {
 		const deleted = await userService.delete(this.validateId(req.params.id));
 		if (!deleted) {
-			res.status(404).json({ ok: false, message: "User not found" });
+			res.status(404).json({ success: false, error: { message: "User not found" } });
 			return;
 		}
 		res.status(204).send();
@@ -72,7 +74,7 @@ export class UserController {
 	async updateUser(req: Request, res: Response) {
 		const updatedUser = await userService.update(this.validateId(req.params.id), req.body);
 		if (!updatedUser) {
-			res.status(404).json({ ok: false, message: "User not found" });
+			res.status(404).json({ success: false, error: { message: "User not found" } });
 			return;
 		}
 		res.json({ data: updatedUser });
