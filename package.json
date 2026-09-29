@@ -4,11 +4,10 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"dev": "NODE_ENV=development ts-node-dev --respawn src/index.ts",
+		"dev": "node scripts/run.js development node_modules/ts-node-dev/lib/bin.js --respawn --transpile-only src/index.ts",
 		"build": "tsc",
-		"start": "NODE_ENV=production node dist/index.js",
-		"clean": "rm -rf dist",
-		"lint": "echo \"(opcional) Agregá ESLint aquí si querés :)\""
+		"start": "node scripts/run.js production dist/index.js",
+		"clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\""
 	},
 	"keywords": [],
 	"author": "",
