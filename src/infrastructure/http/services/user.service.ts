@@ -31,5 +31,14 @@ export class UserService {
 		return this.userRepository.delete(id);
 	}
 
+	//metodo update
+	async update(id: string, user: Partial<User>): Promise<User | null> {
+		const existingUser = await this.userRepository.findById(id);
+		if (!existingUser) {
+			return null;
+		}
+		return this.userRepository.update(id, user);
+	}
+
 
 }	
