@@ -16,4 +16,15 @@ export class UserController {
 		});
 		res.status(201).json({ ok: true, user });
 	}
+
+	//metodo deleteUser
+	async deleteUser(req: Request, res: Response) {
+		const { id } = req.params;
+		const deleted = await userService.delete(id);
+		if (!deleted) {
+			res.status(404).json({ ok: false, message: "User not found" });
+			return;
+		}
+		res.json({ ok: true, message: "User deleted successfully" });
+	}
 }

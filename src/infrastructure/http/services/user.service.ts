@@ -22,4 +22,14 @@ export class UserService {
 		}
 		return this.userRepository.save(user);
 	}
-}
+	//metodo delete
+	async delete(id: string): Promise<boolean> {
+		const existingUser = await this.userRepository.findById(id);
+		if (!existingUser) {
+			return false;
+		}
+		return this.userRepository.delete(id);
+	}
+
+
+}	

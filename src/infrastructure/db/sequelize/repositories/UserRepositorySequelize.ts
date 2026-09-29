@@ -25,4 +25,25 @@ export class UserRepositorySequelize implements UserRepository {
 		const user = await UserModel.findOne({ where: { email } });
 		return user ? new User(user.name, user.email, user.id) : null;
 	}
-}
+
+	//funciones crud faltantes
+	//Update
+	async update(id: string, user: Partial<User>): Promise<User | null> {
+		const existingUser = await UserModel.findByPk(id);
+		if (!existingUser) {
+			return null;
+		}
+		await existingUser.update(user);
+		return new User(existingUser.name, existingUser.email, existingUser.id);
+	}	
+//Delete
+	async delete(id: string): Promise<boolean> {
+		const existingUser = await UserModel.findByPk(id);
+		if (!existingUser) {
+			return false;
+		}
+		await existingUser.destroy();
+		return true;
+	}
+	
+	}
