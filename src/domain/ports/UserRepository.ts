@@ -5,4 +5,8 @@ export interface UserRepository {
 	findById(id: string): Promise<User | null>;
 	save(user: User): Promise<void>;
 	findByEmail?(email: string): Promise<User | null>;
+	//metodos faltantes update y delete
+	update(id: string, user: Partial<User>): Promise<User | null>;
+	delete(id: string): Promise<boolean>;
+	
 }

@@ -1,5 +1,5 @@
 import express, { Application } from "express";
-import HelloRoute from "./infrastructure/http/routes/v1/hello.route";
+//import HelloRoute from "./infrastructure/http/routes/v1/hello.route";
 import UserRoute from "./infrastructure/http/routes/v1/user.route";
 import { sequelize } from "./config/database";
 import { errorHandler } from "./infrastructure/http/middlewares/error.middleware";
@@ -25,7 +25,7 @@ export default class App {
 	}
 
 	private initializeRoutes(): void {
-		this.app.use("/api/v1", HelloRoute);
+		//this.app.use("/api/v1", HelloRoute);
 		this.app.use("/api/v1/users", UserRoute);
 	}
 	private initializeErrorHandling(): void {

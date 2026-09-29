@@ -14,4 +14,5 @@ export class UserModel extends Model {
 
 	@Column(DataType.STRING)
 	email!: string;
+	
 }
