@@ -5,7 +5,10 @@
 	"main": "index.js",
 	"scripts": {
 		"dev": "node scripts/run.js development node_modules/ts-node-dev/lib/bin.js --respawn --transpile-only src/index.ts",
+		"frontend:dev": "npm --prefix frontend run dev",
+		"frontend:build": "npm --prefix frontend run build",
 		"build": "tsc",
+		"test": "npm run build && node --test",
 		"start": "node scripts/run.js production dist/index.js",
 		"clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\""
 	},

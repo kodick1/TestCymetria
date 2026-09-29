@@ -9,36 +9,51 @@ export class UserService {
 		@inject("UserRepository")
 		private readonly userRepository: UserRepository
 	) {}
-	async getAllUsers(): Promise<User[]> {
-		return this.userRepository.findAll();
+
+	async getUsers(page: number, pageSize: number, search: string) {
+		return this.userRepository.findAll(page, pageSize, search);
 	}
-	async create(user: User): Promise<void> {
-		if (!user.name || !user.email) {
-			throw new HttpException(400, "Name and email are required");
-		}
-		const existing = await this.userRepository.findByEmail?.(user.email);
-		if (existing?.email) {
+
+	async getUserById(id: string): Promise<User | null> {
+		return this.userRepository.findById(id);
+	}
+
+	async getUsersForExport(afterId: string | null, pageSize: number, search: string): Promise<User[]> {
+		return this.userRepository.findAllForExport(afterId, pageSize, search);
+	}
+
+	async create(user: User): Promise<User> {
+		user.name = user.name?.trim();
+		user.email = user.email?.trim().toLowerCase();
+		this.validateUser(user.name, user.email);
+		if (await this.userRepository.findByEmail(user.email)) {
 			throw new HttpException(409, "User with this email already exists");
 		}
 		return this.userRepository.save(user);
 	}
-	//metodo delete
+
 	async delete(id: string): Promise<boolean> {
-		const existingUser = await this.userRepository.findById(id);
-		if (!existingUser) {
-			return false;
-		}
 		return this.userRepository.delete(id);
 	}
 
-	//metodo update
 	async update(id: string, user: Partial<User>): Promise<User | null> {
+		if (user.name !== undefined) user.name = user.name.trim();
+		if (user.email !== undefined) user.email = user.email.trim().toLowerCase();
+		if ((user.name !== undefined && !user.name) || (user.email !== undefined && !user.email)) {
+			throw new HttpException(400, "El nombre y el correo no pueden estar vacíos");
+		}
+
 		const existingUser = await this.userRepository.findById(id);
-		if (!existingUser) {
-			return null;
+		if (!existingUser) return null;
+		this.validateUser(user.name ?? existingUser.name, user.email ?? existingUser.email);
+		if (user.email && user.email !== existingUser.email && await this.userRepository.findByEmail(user.email)) {
+			throw new HttpException(409, "User with this email already exists");
 		}
 		return this.userRepository.update(id, user);
 	}
 
-
-}	
+	private validateUser(name: string, email: string): void {
+		if (!name || !email) throw new HttpException(400, "El nombre y el correo son obligatorios");
+		if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpException(400, "Escribe un correo electrónico válido");
+	}
+}
